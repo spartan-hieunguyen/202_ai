@@ -24,11 +24,31 @@ COST_TABLE = [
     ['Mehadia', 'Drobeta', 75],
     ['Drobeta', 'Craiova', 120],
     ['Craiova', 'Pitesti', 138],
-    ['Craiova', 'Rimnicu Vilcea', 138],
-    ['Giurgiu', 'Bucharest', 90]
- ]   
+    ['Craiova', 'Rimnicu Vilcea', 146],
+    ['Giurgiu', 'Bucharest', 90],
+    ['Urziceni', 'Bucharest',  85]
+ ]  
+
+HEURISTIC_COST = [
+    # {'name': , 'cost': },
+    ['Arad', 336],
+    ['Bucharest', 0],    
+    ['Craiova', 160],
+    ['Drobeta', 242],
+    ['Fagaras', 176],
+    ['Giurgiu', 77],
+    ['Lugoj', 244],
+    ['Oradea', 380],
+    ['Pitesti', 100],
+    ['Rimnicu Vilcea', 193],
+    ['Sibiu', 253],
+    ['Timisoara', 329],
+    ['Urziceni', 80],
+    ['Zerind', 374]
+]
 
 CITIES = [
+    # {'name': , 'neighbor': }
     {'name': 'Oradea', 'neighbor': ['Zerind', 'Sibiu']},
     {'name': 'Zerind', 'neighbor': ['Oradea', 'Arad']},
     {'name': 'Arad', 'neighbor': ['Zerind', 'Sibiu', 'Timisoara']},
@@ -38,13 +58,19 @@ CITIES = [
     {'name': 'Fagaras', 'neighbor': ['Sibiu', 'Bucharest']},
     {'name': 'Rimnicu Vilcea', 'neighbor': ['Sibiu', 'Pitesti', 'Craiova']},
     {'name': 'Pitesti', 'neighbor': ['Rimnicu Vilcea', 'Craiova', 'Bucharest']},
-    {'name': 'Bucharest', 'neighbor': ['Pitesti', 'Fagaras', 'Giurgiu']},
-    # {'name': , 'neighbor': }
+    {'name': 'Bucharest', 'neighbor': ['Pitesti', 'Fagaras', 'Giurgiu', 'Urziceni']},    
     {'name': 'Mehadia', 'neighbor': ['Lugoj', 'Drobeta']},
     {'name': 'Drobeta', 'neighbor': ['Mehadia', 'Craiova']},
     {'name': 'Craiova', 'neighbor': ['Drobeta', 'Rimnicu Vilcea', 'Pitesti']},
-    {'name': 'Giurgiu', 'neighbor': ['Bucharest']}
+    {'name': 'Giurgiu', 'neighbor': ['Bucharest']},
+    {'name': 'Urziceni', 'neighbor': ['Bucharest']},
 ]
+
+def calHeurisitic(state):
+    cName = state.getCityName()
+    for c in HEURISTIC_COST:
+        if cName in c: 
+            return c[1]    
 
 def getCost(cName1, cName2):
     for i in COST_TABLE:
@@ -61,6 +87,9 @@ class MapState:
         self.cities = cities    
         self.cur = getCity(cur)
         self.des = des       
+
+    def getCityName(self):
+        return self.cur['name']
 
     def isGoal( self ):    
         if self.cur['name'] == self.des:
@@ -154,11 +183,12 @@ class MapSearchProblem(search.SearchProblem):
         return sum(actions)
 
 if __name__ == '__main__':    
-    rMap = MapState(CITIES, 'Zerind', 'Bucharest')
-    problem = MapSearchProblem(rMap)    
-    # path = search.GraphSearch(problem).findSolution(4, 4)
-    path = search.GraphSearch(problem).findSolution(4, 9)
-    if not path:
-        print("Cannot find any path!")
-    else:
-        print('BFS found a path of %d moves: %s' % (len(path), str(path)))
+    rMap = MapState(CITIES, 'Arad', 'Bucharest')
+    problem = MapSearchProblem(rMap)            
+    # path = search.ucs(problem)
+    # path = search.ids(problem)
+    path = search.gbfs(problem, calHeurisitic)
+    # path = search.astar(problem, calHeurisitic)
+
+    if not isinstance(path, list): print(path)
+    else: print('Found a path of %d moves: %s' % (len(path), str(path)))

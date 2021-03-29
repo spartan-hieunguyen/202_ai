@@ -76,13 +76,13 @@ class VacuumState:
         return False
 
     def __hash__(self):
-        return hash(str(self.floor))
+        return hash(str(self.floor)) + hash(str(self.vacPos))
 
     def __getAsciiString(self):
         """
           Returns a display string for the maze
         """        
-        lines = []
+        lines = ["Vacuum position: [{}, {}]".format(self.vacPos[0], self.vacPos[1])]        
         horizontalLine = ('-' * (4 * len(self.floor[0]) + 1))
         lines.append(horizontalLine)
         for row in range(len(self.floor)):
@@ -150,7 +150,7 @@ def createFloor(m, n, dirtNum):
     initX = random.randint(0, m - 1)
     initY = random.randint(0, n - 1)
     floor = VacuumState(m, n, [initX, initY])
-    
+        
     for i in range(dirtNum):
         dirtX = random.randint(0, m - 1)
         dirtY = random.randint(0, n - 1)
@@ -162,17 +162,19 @@ if __name__ == '__main__':
     vac = createFloor(4, 4, 3)
     problem = VacuumProblem(vac)
     startTime = time.time()
-    # path = search.breadthFirstSearch(problem)
-    path = search.GraphSearch(problem).findSolution(5)
-    # path = search.dfs(problem)
-    print("Cal: ", time.time() - startTime)
-    print('BFS found a path of %d moves: %s' % (len(path), str(path)))
+    # path = search.breadthFirstSearch(problem)    
+    path = search.dfs(problem)
+    print("Cal: ", time.time() - startTime)    
     curr = vac
     i = 1
-    for a in path:
-        curr = curr.result(a)
-        print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
-        print(curr)
+    if not isinstance(path, list):
+        print(path)
+    else:
+        print('BFS found a path of %d moves: %s' % (len(path), str(path)))
+        for a in path:
+            curr = curr.result(a)
+            print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
+            print(curr)
 
-        input("Press return for the next state...")   # wait for key stroke
-        i += 1
+            input("Press return for the next state...")   # wait for key stroke
+            i += 1

@@ -124,17 +124,21 @@ class RiverCrossingSearchProblem:
 if __name__ == '__main__':
     startState = RiverCrossingState()
     prob = RiverCrossingSearchProblem(startState)
-    path = search.GraphSearch(prob).findSolution(1)
+    path = search.dls(prob, 2)
 
     curr = startState
     print('BFS found a path of %d moves: %s' % (len(path), str(path)))
     curr = startState
-    i = 1
-    for a in path:
-        curr = curr.result(a)
-        print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
-        print(curr)
 
-        input("Press return for the next state...")   # wait for key stroke
-        i += 1
+    if not isinstance(path, list): 
+        print(path)
+    else: 
+        i = 1
+        for a in path:
+            curr = curr.result(a)
+            print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
+            print('\n', curr, '\n')
+
+            input("Press return for the next state...")   # wait for key stroke
+            i += 1
 

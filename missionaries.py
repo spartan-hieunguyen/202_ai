@@ -56,7 +56,7 @@ class MissionariesCannibalsState:
         return False
     
     def __hash__(self):
-        return hash(str(self))
+        return hash(str(self.state))
 
     def __getAsciiString(self): 
         bank1 = []
@@ -107,7 +107,8 @@ class MissionariesCannibalsSearchProblem:
 if __name__ == '__main__':
     startState = MissionariesCannibalsState()
     prob = MissionariesCannibalsSearchProblem(startState)
-    path = search.GraphSearch(prob).findSolution(2)
+    # path = search.GraphSearch(prob).findSolution(2)
+    path = search.dfs(prob)
 
     curr = startState
     print('BFS found a path of %d moves: %s' % (len(path), str(path)))

@@ -149,7 +149,7 @@ class EightQueensState:
         return True
 
     def __hash__(self):
-        return hash(str(self.cells))
+        return hash(str(self.board))
 
     def __getAsciiString(self):
         """
@@ -218,8 +218,8 @@ def createRandomChessBoard(moves=8):
     board = EightQueensState()
     for i in range(moves):
         # Execute a random legal move           
-        # board =  board.result(random.sample(board.legalMoves(), 1)[0])
-        board =  board.result([1,0])
+        board =  board.result(random.sample(board.legalMoves(), 1)[0])
+        # board =  board.result([1,0])
     return board
 
 if __name__ == '__main__':
@@ -229,9 +229,8 @@ if __name__ == '__main__':
 
     problem = EightQueensSearchProblem(board)
     startTime = time.time()
-    path = search.GraphSearch(problem).findSolution(2)
-    # path = search.breadthFirstSearch(problem)
-    # path = search.dfs(problem)
+    path = search.dls(problem, 1)
+    
     print("Cal: ", time.time() - startTime)
     print('BFS found a path of %d moves: %s' % (len(path), str(path)))
     curr = board

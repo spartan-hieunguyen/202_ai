@@ -256,29 +256,31 @@ def createRandomEightPuzzle(moves=100):
       a series of 'moves' random moves to a solved
       puzzle.
     """
-    puzzle = EightPuzzleState([1,0,2,3,4,5,6,7,8])
+    puzzle = EightPuzzleState([0, 1, 2, 3, 4, 5, 6, 7, 8])
     for i in range(moves):
         # Execute a random legal move
         puzzle = puzzle.result(random.sample(puzzle.legalMoves(), 1)[0])
     return puzzle
 
 if __name__ == '__main__':
-    puzzle = createRandomEightPuzzle(2)
+    puzzle = createRandomEightPuzzle(5)
     print('A random puzzle:')
     print(puzzle)
 
-    problem = EightPuzzleSearchProblem(puzzle)
-    path = search.breadthFirstSearch(problem)
+    problem = EightPuzzleSearchProblem(puzzle)        
     # path = search.dfs(problem)
-
-    print('BFS found a path of %d moves: %s' % (len(path), str(path)))
+    path = search.bfs(problem)
+    # path = search.dfs(problem)
+    # path = search.ids(problem)
+    print('Found a path of %d moves: %s' % (len(path), str(path)))
     curr = puzzle
     i = 1
     print(path)
-    for a in path:
-        curr = curr.result(a)
-        print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
-        print(curr)
+    if isinstance(path, list):
+        for a in path:
+            curr = curr.result(a)
+            print('After %d move%s: %s' % (i, ("", "s")[i>1], a))
+            print(curr)
 
-        input("Press return for the next state...")   # wait for key stroke
-        i += 1
+            input("Press return for the next state...")   # wait for key stroke
+            i += 1

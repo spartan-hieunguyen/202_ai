@@ -20,12 +20,15 @@ FAILURE = "FAILURE"
 CUT_OFF = "CUTOFF"
 
 import util
+
 class Node:
     def __init__(self, state, parent=None, action=None, cost=0):
         self.state = state
         self.parent = parent
         self.action = action
         self.cost = cost        
+        self.depth = self.parent.getDepth() + 1\
+            if self.parent is not None else 0        
 
     def getState(self):
         return self.state
@@ -41,12 +44,15 @@ class Node:
 
     def getPath(self):
         parNode = self.parent
+        if parNode is None: return []
+
+        action = parNode.getAction()
         path = list()
 
-        while parNode:
-            path.insert(0, parNode.getAction())
+        while action is not None:
+            path.insert(0, action)
             parNode = parNode.getParent()
-        path.remove(None)
+            action = parNode.getAction()            
         path.append(self.action)
 
         return path
@@ -62,141 +68,95 @@ class Node:
         
         return actions
 
+    def getDepth(self):
+        return self.depth    
+
+    def __eq__(self, other):
+        if self.state == other.state:
+            return True
+        return False    
+
 class GraphSearch:
 
     def __init__(self, problem):
         self.problem = problem
-        self.count = util.Counter()
+        self.explored = util.Counter()        
+        print("Start:\n", self.problem.getStartState())
 
-    def findSolution(self, kind, limit=0):
-        """
-        Function use to find solution of graph search problem
-        -----------------------------------------
-        Param:
-            kind: type of search 
-                1: bfs
-                2: dfs
-                3: ucs
-        """
-        self.startState = self.problem.getStartState()
-        print("Start:\n", self.startState)
-        self.startNode = Node(self.startState)
+    def expandNode(self, node, frontier, func):
+        succ = self.problem.getSuccessors(node.getState())
 
-        if kind == 1:
-            frontier = util.Queue()
-            return self.findPath(frontier=frontier)
-        elif kind == 2: 
-            frontier = util.Stack()
-            return self.findPath(frontier=frontier)
-        elif kind == 3:
-            frontier = util.PriorityQueue()
-            return self.uniformCostSearch(frontier=frontier)
-        elif kind == 4:
-            result = self.depthLimitedSearch(limit)
-            if result in [CUT_OFF, FAILURE]: return []
-            else: return result
-        elif kind == 5:
-            depth = 0
-            while True:
-                result = self.depthLimitedSearch(depth)
-                if result not in [CUT_OFF, FAILURE]:
-                    return result
-                elif result is FAILURE: return []
-                depth += 1
+        if isinstance(frontier, util.Stack):
+            succ = succ[::-1]
 
-    def depthLimitedSearch(self, limit):
-        def recurDLS(node, limit):  
-            state = node.getState()
-            if self.problem.isGoalState(state): 
-                return node.getPath()
-            elif limit == 0: return CUT_OFF
-            else:
-                cutOff = False 
-                succ = self.problem.getSuccessors(state)
-                for state, action, cost in succ:
-                    newNode = Node(state, node, action, cost)
-                    result = recurDLS(newNode, limit - 1)
-                if result == CUT_OFF: cutOff = True
-                elif result is not FAILURE:
-                    return result
-                return CUT_OFF if cutOff else FAILURE
+        for state, action, cost in succ: 
+            newNode = Node(state, node, action, cost)
+            if hash(state) not in self.explored:
+                func(newNode, frontier)
 
-        return recurDLS(self.startNode, limit)                
+    def getCostOfActions(self, actions):
+        return 0 if not actions else\
+            self.problem.getCostOfActions(actions)
 
+    def addPriorQueue(self, node, frontier):
+        actions = node.getCostActions()
+        pathCost = self.getCostOfActions(actions)            
+        frontier.update(node, pathCost)
 
-    def uniformCostSearch(self, frontier):
-        """Search the node of least total cost first."""
-        "*** YOUR CODE HERE ***"
-        def getCostOfActions(actions):
-            return self.problem.getCostOfActions(actions)
+    def addSQ(self, node, frontier):
+        frontier.push(node)
 
-        def isInFrontier(node, frontier):
-            state = node.getState()
-            actions = node.getCostActions()
-            pathCost = getCostOfActions(actions)
+    def search(self, frontier, limit=None):
 
-            tmpFrontier = util.PriorityQueue()
-            while not frontier.isEmpty():
-                currentNode = frontier.pop()
-                cActions = currentNode.getCostActions()
-                cPathCost = getCostOfActions(cActions)
+        startNode = Node(self.problem.getStartState())
 
-                if state == currentNode.getState() and\
-                    pathCost < cPathCost:
-
-                    tmpFrontier.update(node, pathCost)
-                else:
-                    tmpFrontier.update(currentNode, cPathCost)
-            return tmpFrontier
-                
-
-        frontier.push(self.startNode, 0)
-        explored = []        
-
+        if isinstance(frontier, util.Stack) or\
+            isinstance(frontier, util.Queue): 
+            f = self.addSQ
+        elif isinstance(frontier, util.PriorityQueue):
+            f = self.addPriorQueue
+        
+        f(startNode, frontier)     
         while not frontier.isEmpty():
-            currentNode = frontier.pop()
-            currentState = currentNode.getState()
-
-            if self.problem.isGoalState(currentState): 
-                return currentNode.getPath()            
-            explored.append(currentState)
-
-            succ = self.problem.getSuccessors(currentState)
-            for state, action, cost in succ:
-                newNode = Node(state, currentNode, action, cost)                
-                if state not in explored:
-                    actions = newNode.getCostActions()
-                    pathCost = getCostOfActions(actions)
-                    frontier.update(newNode, pathCost)
-                frontier = isInFrontier(newNode, frontier)
-
-        util.raiseNotDefined()
-           
-    def findPath(self, frontier):
-        frontier.push(self.startNode)
-        explored = []
-        if self.problem.isGoalState(self.startState): 
-            return self.startNode.getPath()
-        # looping to find solution
-        while not frontier.isEmpty():        
             currentNode = frontier.pop()                    
-            curState = currentNode.getState()      
-            
-            explored.append(curState)
-            succ = self.problem.getSuccessors(curState)
-            
-            if isinstance(frontier, util.Stack):
-                succ = succ[::-1] 
-            for state, action, cost in succ: 
-                newNode = Node(state, currentNode, action, cost)
-                if state not in explored:
-                    if self.problem.isGoalState(state): 
-                        return newNode.getPath()
-                    frontier.push(newNode)            
+            currentState = currentNode.getState()      
 
-        print("Can't find any solutions!")
-        return []  
-   
+            if limit is not None and\
+                currentNode.getDepth() > limit and\
+                frontier.isEmpty():
+                
+                return CUT_OFF
+
+            if self.problem.isGoalState(currentState):
+                return currentNode.getPath()            
+            self.explored[hash(currentState)] = currentState
+            self.expandNode(currentNode, frontier, f)
+        
+        return FAILURE        
+
+class InformedGraphSearch(GraphSearch): 
+    def __init__(self, problem, heuristic, typ):
+        super().__init__(problem)
+        self.heuristic = heuristic
+        self.type = typ
+
+    def addPriorQueue(self, node, frontier):
+        actions = node.getCostActions()                
+        g = self.getCostOfActions(actions)
+        h = self.heuristic(node.getState())
+        if self.type == 'BFS':
+            f = h
+        else:
+            f = g + h        
+        frontier.update(node, f)        
+
+    # def expandNode(self, node, frontier, func):
+    #     succ = self.problem.getSuccessors(node.getState())
+        
+    #     for state, action, cost in succ:
+    #         newNode = Node(state, node, action, cost)
+    #         if hash(state) not in self.explored:
+
 
 class SearchProblem:
     """
@@ -250,6 +210,52 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+def depthFirstSearch(problem):
+    """
+    Search the deepest nodes in the search tree first.
+
+    Your search algorithm needs to return a list of actions that reaches the
+    goal. Make sure to implement a graph search algorithm.
+
+    To get started, you might want to try some of these simple commands to
+    understand the search problem that is being passed in:
+
+    print "Start:", problem.getStartState()
+    print "Is the start a goal?", problem.isGoalState(problem.getStartState())
+    print "Start's successors:", problem.getSuccessors(problem.getStartState())
+    """
+    "*** YOUR CODE HERE ***"
+    frontier = util.Stack()
+    path = GraphSearch(problem).search(frontier)
+    return path
+    # util.raiseNotDefined()
+
+def breadthFirstSearch(problem):
+    """Search the shallowest nodes in the search tree first."""
+    "*** YOUR CODE HERE ***"
+    frontier = util.Queue()
+    path = GraphSearch(problem).search(frontier)
+    return path
+
+def uniformCostSearch(problem):
+    """Search the node of least total cost first."""
+    "*** YOUR CODE HERE ***"
+    frontier = util.PriorityQueue()
+    path = GraphSearch(problem).search(frontier)
+    return path
+
+def depthLimitedSearch(problem, limit):
+    frontier = util.Stack()
+    path = GraphSearch(problem).search(frontier, limit)
+    return path
+
+def iterativeDeepeningSearch(problem):
+    frontier = util.Queue()
+    depth = 1
+    while True:
+        path = GraphSearch(problem).search(frontier, depth)
+        if path is not CUT_OFF: return path
+        depth += 1
 
 def nullHeuristic(state, problem=None):
     """
@@ -261,11 +267,21 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    frontier = util.PriorityQueue()
+    path = InformedGraphSearch(problem, heuristic, 'ASS').search(frontier)
+    return path
+    # util.raiseNotDefined()
 
+def greedyBestFirstSearch(problem, heuristic=nullHeuristic):
+    frontier = util.PriorityQueue()
+    path = InformedGraphSearch(problem, heuristic, 'BFS').search(frontier)
+    return path
 
 # Abbreviations
-# bfs = breadthFirstSearch
-# dfs = depthFirstSearch
-# astar = aStarSearch
-# ucs = uniformCostSearch
+bfs = breadthFirstSearch
+dfs = depthFirstSearch
+dls = depthLimitedSearch
+ids = iterativeDeepeningSearch
+astar = aStarSearch
+gbfs = greedyBestFirstSearch
+ucs = uniformCostSearch
